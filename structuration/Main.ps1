@@ -3,6 +3,6 @@
 #Get-Salutation -nom "abadi"
 
 if(-not (Get-Module -Name ModuleFonctions)) {
-    Import-Module .\Desktop\Formation_powershell\structuration\ModuleFonctions
+    Import-Module $PSScriptRoot\ModuleFonctions
 }
 Get-Salutation -nom "abadi"
