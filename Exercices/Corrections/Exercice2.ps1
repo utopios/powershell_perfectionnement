@@ -12,5 +12,12 @@ foreach($task in $tasks) {
     $tasksRecuperees += $obj
 }
 
-$tasksRecuperees 
+ 
 # $tasksRecuperees | Select-Object Action, Statut
+
+foreach($task in $tasksRecuperees) {
+    $task | Add-Member -MemberType ScriptProperty -Name "EstRisquePotentiel" -Value {
+        $this.Action -match '\.bat$|\.exe$|\.vbs|\.exe\"$'
+    }
+}
+$tasksRecuperees
