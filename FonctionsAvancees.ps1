@@ -44,4 +44,29 @@ function Afficher-Message {
     }
 }
 
-Afficher-Message -Nom "ABADI" -Prenom "Ihab"
+# Afficher-Message -Nom "ABADI" -Prenom "Ihab"
+
+function Afficher-Nom {
+    [CmdletBinding()]
+    param(
+    [Parameter(ValueFromPipeline=$true)]
+    [string]$Name
+    )
+
+    begin {
+        Write-Verbose "Debut de l'appel à la fonction"
+    }
+
+    process {
+        Write-Output "Name $Name"
+    }
+
+    end {
+        Write-Verbose "Fin de l'appel de la fonction"
+    }
+
+}
+
+Afficher-Nom -Name "Ihab" -Verbose
+
+"Toto", "tata", "Titi" | Afficher-Nom -Verbose
