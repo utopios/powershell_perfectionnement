@@ -63,3 +63,9 @@ foreach($s in $serveurs) {
 }
 
 $serveurs | Format-Table
+
+$serveurs | Where-Object {$_.IsProduction -and $_.Etat -eq "OK"} | Format-Table
+
+$serveurs | Sort-Object -Property IP -Descending -Unique | Format-Table
+
+$serveurs | Select-Object Nom, Etat 
