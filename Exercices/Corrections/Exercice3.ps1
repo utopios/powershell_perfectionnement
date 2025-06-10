@@ -13,6 +13,10 @@ class SystemAccount {
     [string]GetInfos() {
         return "Compte $($this.name), login $($this.login)"
     }
+
+    [string] ExecuteDefaultAction() {
+        return "Defaut action from base class"
+    }
 }
 
 # Classes filles 
@@ -27,6 +31,10 @@ class StandardUser : SystemAccount {
         $message = "L'utilisateur $($this.Login) demande l'accès à la ressource: $resource"
         Write-Host $message -ForegroundColor Yellow
         return "Demande d'accès enregistrée pour $resource"
+    }
+
+    [string] ExecuteDefaultAction() {
+        return "Defaut action from base class from standard user $($this.Login)"
     }
     
    
@@ -61,6 +69,10 @@ class DomainAdmin : SystemAccount {
         $baseInfo = ([SystemAccount]$this).GetInfos()
         return "$baseInfo | Niveau de privilège: $($this.PrivilegeLevel)"
     }
+
+    [string] ExecuteDefaultAction() {
+        return "Defaut action from base class from domain admin $($this.Login)"
+    }
     
     
 }
@@ -78,5 +90,23 @@ class ServiceAccount : SystemAccount {
         Write-Host $message -ForegroundColor Green
         return $message
     }
+
+    [string] ExecuteDefaultAction() {
+        return "Defaut action from base class from service account $($this.Login)"
+    }
      
+}
+
+$standardUser = [StandardUser]::new("standard 1", "Login 1")
+$adminDomain = [DomainAdmin]::new("admin 1", "login admin 1", "admin")
+$serviceAccount = [ServiceAccount]::new("service 1", "login service account 1")
+
+$accounts = @($standardUser, $adminDomain)
+
+$accounts += $serviceAccount
+
+$accounts
+
+foreach($a in $accounts) {
+    $a.ExecuteDefaultAction()
 }
