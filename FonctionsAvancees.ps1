@@ -9,4 +9,4 @@
  Write-Output "Param1 = $Param1, Param2 = $Param2"
  Write-Verbose "Plus d'informations"
  
-}Nom-Fonction -Param1 "ttztz" -Param2 10 -Debug
+}function Supprimer-Fichier {    [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='high')]    param(        [string]$chemin    )    if($PSCmdlet.ShouldProcess($chemin, "Suppression")) {        Remove-item $chemin    }}# Nom-Fonction -Param1 "ttztz" -Param2 10 -DebugSupprimer-Fichier -chemin "file.txt" 
