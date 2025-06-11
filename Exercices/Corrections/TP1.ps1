@@ -27,7 +27,7 @@ function Find-FileAdvanced {
         [Switch] $Recurse,
 
         [Parameter(ParameterSetName="BySize", Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
-        [ValidateRange(1)]
+        [ValidateScript({$_ -gt 0})]
         [long] $MinSize,
         
         [Parameter(ParameterSetName="BySize", Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
