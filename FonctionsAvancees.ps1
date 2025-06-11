@@ -49,8 +49,8 @@ function Afficher-Message {
 function Afficher-Nom {
     [CmdletBinding()]
     param(
-    [Parameter(ValueFromPipeline=$true)]
-    [string]$Name
+        [Parameter(ValueFromPipeline = $true)]
+        [string]$Name
     )
 
     begin {
@@ -74,9 +74,9 @@ function Afficher-Nom {
 function Afficher-Infos {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true)]
         [string]$Nom,
-        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true)]
         [string]$Prenom
     )
 
@@ -87,13 +87,43 @@ function Afficher-Infos {
 
 $personnes = @(
     [PSCustomObject]@{
-        Nom = "abadi"
+        Nom    = "abadi"
         Prenom = "Ihab"
     },
     [PSCustomObject]@{
-        Nom = "Toto"
+        Nom    = "Toto"
         Prenom = "tata"
     }
 )
 
-$personnes | Afficher-Infos
+# $personnes | Afficher-Infos
+
+
+function Get-InfosServeur {
+ <#
+ .SYNOPSIS
+ Récupère les informations d’un serveur.
+ .DESCRIPTION
+ Cette fonction retourne un objet contenant le nom, l’adresse IP et la date d’audit.
+ .PARAMETER Nom
+ Nom du serveur string.
+ .PARAMETER IP
+ Adresse IP du serveur.
+ .EXAMPLE
+ Get-InfosServeur -Nom "SRV01" -IP "192.168.1.1"
+ .OUTPUTS
+ PSCustomObject
+ #>
+    param(
+        [string]$Nom,
+        [string]$IP
+    )
+    $objet = [PSCustomObject]@{
+        Nom       = $Nom
+        IP        = $IP
+        DateAudit = (Get-Date)
+    }
+    return $objet
+}
+
+Get-Help Get-InfosServeur -Examples

@@ -7,7 +7,10 @@ function Get-ServiceStatus {
 
     process {
         $service = Get-Service -Name $ServiceName
-        return $service.Status
+        return [PSCustomObject]@{
+            ServiceName = $ServiceName
+            Status = $service.Status
+        }
     }
 }
 
