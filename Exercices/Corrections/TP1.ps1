@@ -14,6 +14,7 @@ function Find-FileAdvanced {
     [CmdletBinding(DefaultParameterSetName = "ByName", SupportsShouldProcess=$true)]
     param(
         [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
         [string[]] $Paths,
 
         [Parameter(ParameterSetName="ByName",  ValueFromPipelineByPropertyName=$true)]
@@ -26,6 +27,7 @@ function Find-FileAdvanced {
         [Switch] $Recurse,
 
         [Parameter(ParameterSetName="BySize", Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
+        [ValidateRange(1)]
         [long] $MinSize,
         
         [Parameter(ParameterSetName="BySize", Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
