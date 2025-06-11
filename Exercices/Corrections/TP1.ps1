@@ -81,8 +81,8 @@ function Find-FileAdvanced {
                         $file.Length -gt $minBytes -and $file.Length -lt $maxBytes
                     }
                     "ByDate" {  
-                        Write-Verbose "$($file.CreationTime) $($file.LastWriteTime)"
-                        ($file.CreationTime -gt $CreatedAfter -and $file.CreationTime -lt $CreatedBefore)  -and ($file.LastWriteTime -gt $ModifiedAfter -and $file.LastAccessTime -lt $ModifiedBefore)
+                        Write-Verbose "$($file.CreationTime) $($file.LastWriteTime) $ModifiedAfter $ModifiedBefore"
+                        ($file.CreationTime -gt $CreatedAfter -and $file.CreationTime -lt $CreatedBefore)  -and ($file.LastWriteTime -gt $ModifiedAfter -and $file.LastWriteTime -lt $ModifiedBefore)
                      }
                 }
             }
@@ -117,8 +117,8 @@ function Find-FileAdvanced {
 
 [PSCustomObject]@{
     Paths = @("C:\Users\Administrateur\Downloads")
-    CreatedAfter = "09/06/2025"
-    CreatedBefore = "11/06/2025"
-    ModifiedBefore = "11/06/2025"
-    ModifiedAfter = "09/06/2025"
+    CreatedAfter = [datetime]"06/09/2025"
+    CreatedBefore = [datetime]"06/11/2025"
+    ModifiedBefore = [datetime]"06/11/2025"
+    ModifiedAfter = [datetime]"06/09/2025"
 } | Find-FileAdvanced -Verbose
