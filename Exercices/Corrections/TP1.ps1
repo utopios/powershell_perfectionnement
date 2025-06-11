@@ -55,7 +55,23 @@ function Find-FileAdvanced {
         foreach($path in $Paths) {
             Write-Verbose "Debut de recherche dans $path"
             $options = if($Recurse) { "-Recurse" } else {""}
-            $files = Get-ChildItem -Path $path -File -Recurse
+            $files = Get-ChildItem -Path $path -File -Recurse | Where-Object {
+                $file = $_
+                Write-Verbose $file
+                switch ($PSCmdlet.ParameterSetName) {
+                    "ByName" { 
+                        
+                        $file.Name -like "$Name*" -and 
+                        $Extensions -contains $file.Extension
+                     }
+                    "BySize" { 
+
+                     }
+                    "ByDate" { 
+
+                     }
+                }
+            }
             Write-Verbose "Fichiers trouvés $files avec $options"
             $allfiles += $files
         }
@@ -67,7 +83,13 @@ function Find-FileAdvanced {
     }
 }
 
+# [PSCustomObject]@{
+#     Paths = @("C:\Users\Administrateur")
+#     Recurse = $true
+# } | Find-FileAdvanced -Verbose
+
 [PSCustomObject]@{
-    Paths = @("C:\Users\Administrateur")
-    Recurse = $true
+    Paths = @("C:\Users\Administrateur\Downloads")
+    Name = "Git"
+    Extensions = @('.exe', '.bat')
 } | Find-FileAdvanced -Verbose
