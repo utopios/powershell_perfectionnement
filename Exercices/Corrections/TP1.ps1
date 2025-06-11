@@ -69,7 +69,7 @@ function Find-FileAdvanced {
             $options = if($Recurse) { "-Recurse" } else {""}
             $files = Get-ChildItem -Path $path -File -Recurse | Where-Object {
                 $file = $_
-                Write-Verbose $file.
+                
                 switch ($PSCmdlet.ParameterSetName) {
                     "ByName" { 
                         $file.Name -like "$Name*" -and 
@@ -80,8 +80,9 @@ function Find-FileAdvanced {
                         $maxBytes = Convert-Size -Size $MaxSize -Unit $SizeUnit
                         $file.Length -gt $minBytes -and $file.Length -lt $maxBytes
                     }
-                    "ByDate" { 
-
+                    "ByDate" {  
+                        Write-Verbose "$($file.CreationTime) $($file.LastWriteTime)"
+                        ($file.CreationTime -gt $CreatedAfter -and $file.CreationTime -lt $CreatedBefore)  -and ($file.LastWriteTime -gt $ModifiedAfter -and $file.LastAccessTime -lt $ModifiedBefore)
                      }
                 }
             }
@@ -107,9 +108,17 @@ function Find-FileAdvanced {
 #     Extensions = @('.exe', '.bat')
 # } | Find-FileAdvanced -Verbose
 
+# [PSCustomObject]@{
+#     Paths = @("C:\Users\Administrateur\Downloads")
+#     MinSize = 10
+#     MaxSize = 1000 
+#     SizeUnit = "MB"
+# } | Find-FileAdvanced -Verbose
+
 [PSCustomObject]@{
     Paths = @("C:\Users\Administrateur\Downloads")
-    MinSize = 10
-    MaxSize = 1000 
-    SizeUnit = "MB"
+    CreatedAfter = "09/06/2025"
+    CreatedBefore = "11/06/2025"
+    ModifiedBefore = "11/06/2025"
+    ModifiedAfter = "09/06/2025"
 } | Find-FileAdvanced -Verbose
