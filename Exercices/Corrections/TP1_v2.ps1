@@ -400,4 +400,271 @@ function Copy-FileAdvanced {
     }
 }
 
+
+function Remove-FilesByRule {
+    [CmdletBinding(
+        DefaultParameterSetName = "ByAge",
+        SupportsShouldProcess = $true,
+        ConfirmImpact = "High"
+    )]
+    param(
+        [Parameter(
+            Mandatory = $true,
+            Position = 0,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true
+        )]
+        [ValidateScript({
+            foreach ($p in $_) {
+                if (-not (Test-Path $p)) {
+                    throw "Le chemin '$p' n'existe pas."
+                }
+            }
+            return $true
+        })]
+        [string[]]$Path,
+
+        # ParameterSet "ByAge"
+        [Parameter(ParameterSetName = "ByAge")]
+        [ValidateScript({
+            if ($_.TotalDays -le 0) {
+                throw "OlderThan doit être une durée positive."
+            }
+            return $true
+        })]
+        [timespan]$OlderThan,
+
+        [Parameter(ParameterSetName = "ByAge")]
+        [ValidateScript({
+            if ($_.TotalDays -le 0) {
+                throw "NewerThan doit être une durée positive."
+            }
+            if ($OlderThan -and $_ -ge $OlderThan) {
+                throw "NewerThan doit être inférieur à OlderThan."
+            }
+            return $true
+        })]
+        [timespan]$NewerThan,
+
+        # ParameterSet "ByPattern"
+        [Parameter(ParameterSetName = "ByPattern", Mandatory = $true)]
+        [ValidateScript({
+            try {
+                [regex]::new($_) | Out-Null
+                return $true
+            }
+            catch {
+                throw "NamePattern '$_' n'est pas une expression régulière valide."
+            }
+        })]
+        [string]$NamePattern,
+
+        [Parameter(ParameterSetName = "ByPattern")]
+        [ValidateScript({
+            try {
+                [regex]::new($_) | Out-Null
+                return $true
+            }
+            catch {
+                throw "ContentPattern '$_' n'est pas une expression régulière valide."
+            }
+        })]
+        [string]$ContentPattern,
+
+        # ParameterSet "BySize"
+        [Parameter(ParameterSetName = "BySize")]
+        [switch]$EmptyFiles,
+
+        [Parameter(ParameterSetName = "BySize")]
+        [ValidatePattern('^\d+[KMGT]?B$')]
+        [string]$LargerThan,
+
+        [Parameter(ParameterSetName = "BySize")]
+        [ValidatePattern('^\d+[KMGT]?B$')]
+        [string]$SmallerThan,
+
+        # Paramètres communs
+        [switch]$Recurse,
+        [switch]$Force,
+        [switch]$LogActions
+    )
+
+    begin {
+        Write-Verbose "Mode de suppression: $($PSCmdlet.ParameterSetName)"
+        
+        # Fonction pour convertir les tailles
+        function ConvertTo-Bytes {
+            param([string]$SizeString)
+            
+            if ($SizeString -match '^(\d+)([KMGT]?)B$') {
+                $number = [long]$matches[1]
+                $unit = $matches[2]
+                
+                switch ($unit) {
+                    'K' { return $number * 1KB }
+                    'M' { return $number * 1MB }
+                    'G' { return $number * 1GB }
+                    'T' { return $number * 1TB }
+                    default { return $number }
+                }
+            }
+            return 0
+        }
+        
+        # Conversion des tailles si nécessaire
+        $largerThanBytes = if ($LargerThan) { ConvertTo-Bytes $LargerThan } else { 0 }
+        $smallerThanBytes = if ($SmallerThan) { ConvertTo-Bytes $SmallerThan } else { [long]::MaxValue }
+        
+        $deletedFiles = @()
+        $errors = @()
+        $logFile = if ($LogActions) { Join-Path $env:TEMP "Remove-FilesByRule_$(Get-Date -Format 'yyyyMMdd_HHmmss').log" }
+        
+        if ($LogActions) {
+            "=== DÉBUT DE LA SUPPRESSION - $(Get-Date) ===" | Out-File $logFile
+            Write-Verbose "Log des actions: $logFile"
+        }
+    }
+
+    process {
+        foreach ($currentPath in $Path) {
+            Write-Verbose "Analyse du chemin: $currentPath"
+            
+            try {
+                # Récupération des fichiers
+                $getChildItemParams = @{
+                    Path = $currentPath
+                    File = $true
+                    Force = $Force
+                }
+                
+                if ($Recurse) {
+                    $getChildItemParams.Recurse = $true
+                }
+                
+                $files = Get-ChildItem @getChildItemParams
+                Write-Verbose "Trouvé $($files.Count) fichier(s) à analyser"
+                
+                foreach ($file in $files) {
+                    $shouldDelete = $false
+                    $reason = ""
+                    
+                    # Application des règles selon le ParameterSet
+                    switch ($PSCmdlet.ParameterSetName) {
+                        "ByAge" {
+                            $age = (Get-Date) - $file.LastWriteTime
+                            
+                            if ($OlderThan -and $age -gt $OlderThan) {
+                                $shouldDelete = $true
+                                $reason = "Plus ancien que $($OlderThan.Days) jour(s)"
+                            }
+                            elseif ($NewerThan -and $age -lt $NewerThan) {
+                                $shouldDelete = $true
+                                $reason = "Plus récent que $($NewerThan.Days) jour(s)"
+                            }
+                        }
+                        
+                        "ByPattern" {
+                            if ($NamePattern -and $file.Name -match $NamePattern) {
+                                $shouldDelete = $true
+                                $reason = "Nom correspond au pattern: $NamePattern"
+                            }
+                            
+                            if ($ContentPattern -and $file.Extension -in @('.txt', '.log', '.csv', '.json', '.xml')) {
+                                try {
+                                    $content = Get-Content $file.FullName -Raw -ErrorAction Stop
+                                    if ($content -match $ContentPattern) {
+                                        $shouldDelete = $true
+                                        $reason += " / Contenu correspond au pattern: $ContentPattern"
+                                    }
+                                }
+                                catch {
+                                    Write-Verbose "Impossible de lire le contenu de: $($file.FullName)"
+                                }
+                            }
+                        }
+                        
+                        "BySize" {
+                            if ($EmptyFiles -and $file.Length -eq 0) {
+                                $shouldDelete = $true
+                                $reason = "Fichier vide"
+                            }
+                            elseif ($file.Length -gt $largerThanBytes) {
+                                $shouldDelete = $true
+                                $reason = "Taille supérieure à $LargerThan"
+                            }
+                            elseif ($file.Length -lt $smallerThanBytes) {
+                                $shouldDelete = $true
+                                $reason = "Taille inférieure à $SmallerThan"
+                            }
+                        }
+                    }
+                    
+                    if ($shouldDelete) {
+                        $fileInfo = [PSCustomObject]@{
+                            FullName = $file.FullName
+                            Name = $file.Name
+                            Size = $file.Length
+                            LastWriteTime = $file.LastWriteTime
+                            Reason = $reason
+                            DeleteTime = Get-Date
+                        }
+                        
+                        if ($PSCmdlet.ShouldProcess($file.FullName, "Supprimer le fichier ($reason)")) {
+                            try {
+                                Remove-Item $file.FullName -Force
+                                $deletedFiles += $fileInfo
+                                Write-Verbose "Supprimé: $($file.FullName) - $reason"
+                                
+                                if ($LogActions) {
+                                    "SUPPRIMÉ: $($file.FullName) - $reason - $(Get-Date)" | Out-File $logFile -Append
+                                }
+                            }
+                            catch {
+                                $errors += [PSCustomObject]@{
+                                    File = $file.FullName
+                                    Error = $_.Exception.Message
+                                    Time = Get-Date
+                                }
+                                $errors += $error
+                                Write-Error "Erreur lors de la suppression de $($file.FullName): $($_.Exception.Message)"
+                                
+                                if ($LogActions) {
+                                    "ERREUR: $($file.FullName) - $($_.Exception.Message) - $(Get-Date)" | Out-File $logFile -Append
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch {
+                Write-Error "Erreur lors de l'analyse de $currentPath : $($_.Exception.Message)"
+            }
+        }
+    }
+
+    end {
+        if ($LogActions) {
+            "=== FIN DE LA SUPPRESSION - $(Get-Date) ===" | Out-File $logFile -Append
+            "Fichiers supprimés: $($deletedFiles.Count)" | Out-File $logFile -Append
+            "Erreurs: $($errors.Count)" | Out-File $logFile -Append
+        }
+        
+        # Rapport final
+        Write-Host "`n=== RAPPORT DE SUPPRESSION ===" -ForegroundColor Red
+        Write-Host "Fichiers supprimés: $($deletedFiles.Count)" -ForegroundColor Yellow
+        Write-Host "Erreurs: $($errors.Count)" -ForegroundColor $(if ($errors.Count -gt 0) { "Red" } else { "Green" })
+        
+        if ($deletedFiles.Count -gt 0) {
+            $totalSize = ($deletedFiles | Measure-Object -Property Size -Sum).Sum
+            Write-Host "Espace libéré: $([math]::Round($totalSize/1MB, 2)) MB" -ForegroundColor Green
+        }
+        
+        if ($LogActions) {
+            Write-Host "Log disponible: $logFile" -ForegroundColor Cyan
+        }
+        
+        return $deletedFiles
+    }
+}
+
 Copy-FileAdvanced -Source .\Exercices -Destination .\ExercicesCopies -Overwrite -Verbose
