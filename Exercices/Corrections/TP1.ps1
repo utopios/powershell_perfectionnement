@@ -1,3 +1,15 @@
+function Convert-Size {
+    param(
+        [long] $Size,
+        [string] $Unit
+    )
+    switch ($Unit) {
+        'KB' { return $Size * 1KB }
+        'MB' { return $Size * 1MB }
+        'GB' { return $Size * 1GB }
+        Default {return $Size}
+    }
+}
 function Find-FileAdvanced {
     [CmdletBinding(DefaultParameterSetName = "ByName", SupportsShouldProcess=$true)]
     param(
@@ -57,16 +69,17 @@ function Find-FileAdvanced {
             $options = if($Recurse) { "-Recurse" } else {""}
             $files = Get-ChildItem -Path $path -File -Recurse | Where-Object {
                 $file = $_
-                Write-Verbose $file
+                Write-Verbose $file.
                 switch ($PSCmdlet.ParameterSetName) {
                     "ByName" { 
-                        
                         $file.Name -like "$Name*" -and 
                         $Extensions -contains $file.Extension
                      }
                     "BySize" { 
-
-                     }
+                        $minBytes = Convert-Size -Size $MinSize -Unit $SizeUnit
+                        $maxBytes = Convert-Size -Size $MaxSize -Unit $SizeUnit
+                        $file.Length -gt $minBytes -and $file.Length -lt $maxBytes
+                    }
                     "ByDate" { 
 
                      }
@@ -88,8 +101,15 @@ function Find-FileAdvanced {
 #     Recurse = $true
 # } | Find-FileAdvanced -Verbose
 
+# [PSCustomObject]@{
+#     Paths = @("C:\Users\Administrateur\Downloads")
+#     Name = "Git"
+#     Extensions = @('.exe', '.bat')
+# } | Find-FileAdvanced -Verbose
+
 [PSCustomObject]@{
     Paths = @("C:\Users\Administrateur\Downloads")
-    Name = "Git"
-    Extensions = @('.exe', '.bat')
+    MinSize = 10
+    MaxSize = 1000 
+    SizeUnit = "MB"
 } | Find-FileAdvanced -Verbose
