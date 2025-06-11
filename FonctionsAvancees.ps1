@@ -67,6 +67,33 @@ function Afficher-Nom {
 
 }
 
-Afficher-Nom -Name "Ihab" -Verbose
+# Afficher-Nom -Name "Ihab" -Verbose
 
-"Toto", "tata", "Titi" | Afficher-Nom -Verbose
+# "Toto", "tata", "Titi" | Afficher-Nom -Verbose
+
+function Afficher-Infos {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName=$true)]
+        [string]$Nom,
+        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName=$true)]
+        [string]$Prenom
+    )
+
+    process {
+        Write-Host "Nom $Nom, Prénom $Prenom"
+    }
+}
+
+$personnes = @(
+    [PSCustomObject]@{
+        Nom = "abadi"
+        Prenom = "Ihab"
+    },
+    [PSCustomObject]@{
+        Nom = "Toto"
+        Prenom = "tata"
+    }
+)
+
+$personnes | Afficher-Infos
