@@ -667,4 +667,5 @@ function Remove-FilesByRule {
     }
 }
 
-Copy-FileAdvanced -Source .\Exercices -Destination .\ExercicesCopies -Overwrite -Verbose
+# Copy-FileAdvanced -Source .\Exercices -Destination .\ExercicesCopies -Overwrite -Verbose
+Remove-FilesByRule -Path "C:\Temp" -OlderThan (New-TimeSpan -Seconds 10) -LogActions
