@@ -42,5 +42,18 @@ function Find-FileAdvanced {
 
         [Parameter(Mandatory=$true, ValueFromPipelineByPropertyName=$true)]
         [Switch] $Hidden
+        
     )
+
+    begin {
+        Write-Verbose "Debut de l'utilisation de la fonction find-fileAdvanced avec les arguments :"
+    }
+
+    process {
+
+    }
+
+    end {
+        Write-Verbose "Fin de l'utilisation de la fonction find-fileAdvanced avec les arguments :"
+    }
 }
